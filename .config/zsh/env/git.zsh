@@ -1,10 +1,9 @@
-alias dots="git --git-dir=$REPOS/dots --work-tree=$HOME"
+[[ ! -t 0 ]] && return
 
-if [ -f $XDG_CONFIG_HOME/git/.env ]; then
-  source $XDG_CONFIG_HOME/git/.env
+if [ -f $XDG_CONFIG_HOME/git/env ]; then
+  source $XDG_CONFIG_HOME/git/env
 fi
 
-# Check if Git author information is missing after sourcing .env
 if [[ -z "$GIT_AUTHOR_NAME" || -z "$GIT_AUTHOR_EMAIL" ]]; then
   echo "git user context is missing."
   if [[ -z "$GIT_AUTHOR_NAME" ]]; then
@@ -19,16 +18,14 @@ if [[ -z "$GIT_AUTHOR_NAME" || -z "$GIT_AUTHOR_EMAIL" ]]; then
     echo "Error: Both Git author name and email are required."
     return 1
   fi
-  mkdir -p ~/.config/git
+  mkdir -p $XDG_CONFIG_HOME/git
   {
     echo "#!/usr/bin/env zsh"
     echo "export GIT_AUTHOR_NAME=\"$git_name\""
     echo "export GIT_AUTHOR_EMAIL=\"$git_email\""
     echo "export GIT_COMMITTER_NAME=\"$git_name\""
     echo "export GIT_COMMITTER_EMAIL=\"$git_email\""
-  } >$XDG_CONFIG_HOME/git/.env
-  source $XDG_CONFIG_HOME/git/.env
+  } >$XDG_CONFIG_HOME/git/env
+  source $XDG_CONFIG_HOME/git/env
   unset git_name git_email
 fi
-
-plugins+=git

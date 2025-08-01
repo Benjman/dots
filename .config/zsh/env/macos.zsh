@@ -1,8 +1,9 @@
-#!/usr/bin/env zsh
-[[ ! -t 0 ]] && return
 [[ $(uname) != "Darwin" ]] && return
 
-plugins+=brew
+launchctl setenv BROWSER $BROWSER
+launchctl setenv EDITOR $EDITOR
+launchctl setenv PAGER $PAGER
+launchctl setenv TERMINAL $TERMINAL
 
 _symlink_config_dir() {
   local name="$1"

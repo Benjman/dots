@@ -5,11 +5,7 @@ attempts to source ~/.zshrc. Note: sourcing occurs in a subshell and does not af
 the current shell environment; manual sourcing may be required for changes to take effect.
 ]]
 
-if vim.env.XDG_CONFIG_HOME == nil then
-  return
-end
-
-local zsh_config_dir = vim.fn.expand(vim.env.XDG_CONFIG_HOME .. "/zsh")
+local zsh_config_dir = vim.fn.stdpath("config") .. "/zsh"
 local zshrc = vim.fn.expand(vim.env.HOME .. "/.zshrc")
 local updated_zsh_config = false
 local group = vim.api.nvim_create_augroup("ZshConfigAutoSource", { clear = true })
