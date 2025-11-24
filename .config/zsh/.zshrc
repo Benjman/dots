@@ -1,85 +1,42 @@
-[[ ! -t 0 ]] && return
+[[ -o interactive ]] || return 0
 
-_refresh_zsh() {
-  if [ -f $ZSH_UPDATE_TRIGGER_PATH ]; then
-    echo "Sourcing $HOME/.zshrc..."
-    source ~/.zshrc
-    rm -f "$ZSH_UPDATE_TRIGGER_PATH"
-  fi
-}
+export ZSH_CACHE_DIR="$XDG_CACHE_HOME/zsh"
+export ZSH_STALE_PATH="$XDG_RUNTIME_DIR/zsh_stale"
 
-notes() {
-  local notes_path="$NEXTCLOUD_DIR/Notes"
-  if [ -d "$notes_path" ]; then
-    cd "$notes_path"
-    $EDITOR -c "lua require('persistence').load()" .
-    cd - >/dev/null
-  else
-    echo "Notes directory not found: $notes_path"
-  fi
-}
+mkdir -p -- \
+  "$XDG_CACHE_HOME/$USER" \
+  "$XDG_CONFIG_HOME/$USER" \
+  "$XDG_DATA_HOME/$USER" \
+  "$XDG_STATE_HOME/$USER" \
+  "$ZDOTDIR/env.d" \
+  "$ZDOTDIR/rc.d" \
+  "$ZSH_CACHE_DIR" \
+  "$XDG_RUNTIME_DIR" 2>/dev/null
 
-nvimc() {
-  cd "$XDG_CONFIG_HOME/nvim"
-  case "$1" in
-  "d") pwd ;;
-  *)
-    nvim
-    cd - >/dev/null
-    ;;
-  esac
-}
+HISTFILE="$ZSH_CACHE_DIR/history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_EXPIRE_DUPS_FIRST HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS HIST_SAVE_NO_DUPS SHARE_HISTORY
 
-repos() {
-  local dir="$REPOS/$1"
-  [[ -d "$dir" ]] && cd "$dir" || echo "\"$dir\" is not a directory."
-}
-
-if command -v compdef &> /dev/null; then
-  _reposCompletion() {
-    compadd -- ${(f)"$(ls -1d $REPOS/*(/) 2>/dev/null | xargs -n1 basename)"}
-  }
-  compdef _reposCompletion repos
+autoload -Uz compinit
+if [[ -n $ZSH_CACHE_DIR/zcompdump(.Nmh+7) ]]; then
+  compinit -C -d "$ZSH_CACHE_DIR/zcompdump"
+else
+  compinit -d "$ZSH_CACHE_DIR/zcompdump"
 fi
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
-zshc() {
-  cd "$ZDOTDIR"
-  $EDITOR -c "lua require('persistence').load()"
-  if [ -f "$ZSH_STALE_PATH" ]; then
-    rm "$ZSH_STALE_PATH"
-    [[ -r "$HOME/.zshenv" ]] && source "$HOME/.zshenv"
-    [[ -r "$ZDOTDIR/.zshenv" ]] && source "$ZDOTDIR/.zshenv"
-    [[ -r "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
-    [[ -r "$ZDOTDIR/.zprofile" ]] && source "$ZDOTDIR/.zprofile"
-    [[ -r "$HOME/.zshrc" ]] && source "$HOME/.zshrc"
-    [[ -r "$ZDOTDIR/.zshrc" ]] && source "$ZDOTDIR/.zshrc"
-    echo ":: Resourced ZSH files"
-  fi
-  cd - >/dev/null
-}
+bindkey -v
+export KEYTIMEOUT=1
 
-[[ -d "$XDG_CACHE_HOME/$USER" ]] || mkdir -p "$XDG_CACHE_HOME/$USER"
-[[ -d "$XDG_CONFIG_HOME/$USER" ]] || mkdir -p "$XDG_CONFIG_HOME/$USER"
-[[ -d "$XDG_DATA_HOME/$USER" ]] || mkdir -p "$XDG_DATA_HOME/$USER"
-
-alias dflg="lazygit --git-dir=$REPOS/dots --work-tree=$HOME"
-alias dots="git --git-dir=$REPOS/dots --work-tree=$HOME"
-alias ld="lazydocker"
-alias lg="lazygit"
-alias ll="ls -lah"
+alias ll="ls --color=auto -lah"
 alias ls="ls --color=auto"
-alias tmux="tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf"
-alias wget="wget --hsts-file=$XDG_CACHE_HOME/wget-hsts"
 
-if command -v nproc &>/dev/null; then
-  alias make="make -j$(nproc)"
-fi
+(( $+commands[nproc] )) && alias make='make -j$(nproc)'
 
-if [ -d "$ZDOTDIR"/rc ]; then
-  for file in "$ZDOTDIR"/rc/*.zsh; do
-    if [ -r "$file" ]; then
-      source "$file"
-    fi
-  done
-  unset -v file
-fi
+for file in "$ZDOTDIR"/rc.d/*.zsh(N); do
+  . "$file"
+done
+unset -v file

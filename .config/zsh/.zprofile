@@ -1,33 +1,47 @@
-export CARGO_HOME="$XDG_DATA_HOME/cargo"
-export CMAKE_PREFIX="$HOME/.local"
-export CUDA_CACHE_PATH="$XDG_CACHE_HOME/nv"
-export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"
-export GNUPGHOME="$XDG_CONFIG_HOME/gnupg"
-export GOMODCACHE="$XDG_CACHE_HOME/go/mod"
-export GOPATH="$XDG_DATA_HOME/go"
-export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npmrc"
-export NVMRC_PATH="$XDG_CONFIG_HOME/nvmrc"
-export NVM_DIR="$XDG_DATA_HOME/nvm"
-export RUSTUP_HOME="$XDG_DATA_HOME/rustup"
-export ZSH_CACHE_DIR="$XDG_CACHE_HOME/zsh"
-export ZSH_STALE_PATH="$XDG_RUNTIME_DIR/zsh_stale"
+export BROWSER=firefox
+export EDITOR=nvim
+export PAGER=less
+export VISUAL=nvim
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  export JAVA_HOME="$HOMEBREW_CELLAR/openjdk/24.0.1"
-elif [[ "$(uname -s)" == "Linux" ]]; then
-  export JAVA_HOME="$XDG_DATA_HOME/openjdk/current"
+export REPOS="$XDG_DATA_HOME/repos"
+export NEXTCLOUD_DIR="$XDG_DATA_HOME/Nextcloud"
+export PASSWORD_STORE_DIR="$REPOS/password-store/"
+
+(( ${+ZSH_VERSION} )) && [[ -o interactive ]] && {
+  export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border=sharp"
+  export LESS="-iMRx4 -j.5"
+  export MANPAGER="nvim +Man!"
+}
+
+typeset -U path fpath cdpath manpath
+typeset -T LD_LIBRARY_PATH ld_library_path
+
+path=(
+  "$HOME/.local/bin"
+  "$HOME/bin"
+  "$XDG_DATA_HOME/cargo/bin"
+  "$XDG_DATA_HOME/go/bin"
+  "$XDG_DATA_HOME/npm/bin"
+  "$XDG_DATA_HOME/gem/ruby/"*/bin(N/)
+  /opt/homebrew/bin(N/)
+  /usr/local/bin(N/)
+  $path
+)
+
+# ── Homebrew – only eval if brew is installed and not already in PATH ──
+if (( ${+commands[brew]} )) && [[ -z "$HOMEBREW_PREFIX" ]]; then
+  # This is ~50–80 ms faster than running `brew shellenv` unconditionally
+  eval "$(brew shellenv)"
 fi
 
-[[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
-[[ -d "$HOME/.pub-cache/bin" ]] && path+=("$HOME/.pub-cache/bin")
-[[ -d "$JAVA_HOME" ]] && path=("$JAVA_HOME/bin" $path)
-[[ -d "$NEXTCLOUD_DIR/bin" ]] && path=("$NEXTCLOUD_DIR/bin" $path)
-
-if [ -d "$ZDOTDIR"/env ]; then
-  for file in "$ZDOTDIR"/env/*.zsh; do
-    if [ -r "$file" ]; then
-      source "$file"
-    fi
+if [[ -d "$ZDOTDIR/env.d" ]]; then
+  setopt nullglob
+  for f in "$ZDOTDIR"/env.d/*.zsh(N); do
+    . "$f"
   done
-  unset -v file
+  unsetopt nullglob
+fi
+
+if [[ -x "/opt/homebrew/bin/brew" ]] && (( ! ${path[(Ie)/opt/homebrew/bin]} )); then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
