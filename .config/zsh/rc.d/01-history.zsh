@@ -1,5 +1,6 @@
-HISTFILE="$ZSH_CACHE/history"
+HISTFILE="$ZSH_STATE/history"
 HISTSIZE=10000
+# shellcheck disable=SC2034 # zsh special parameter, read by the shell
 SAVEHIST=10000
 
 setopt EXTENDED_HISTORY        # save timestamp + duration per entry
@@ -16,4 +17,5 @@ setopt SHARE_HISTORY           # share history across all live zsh sessions
 # Noisy commands not worth recalling. HISTORY_IGNORE is zsh's built-in for
 # exactly this: the pattern is matched against the whole command line, so it
 # replaces the hand-rolled zshaddhistory hook this file used to carry.
+# shellcheck disable=SC2034 # zsh special parameter, read by the shell
 HISTORY_IGNORE='(bg|fg|jobs|cd|..|...|....|.....|date|uptime|exit|clear|lazydocker|lazygit|lg|dflg|ls|ll|la|l|scratch|tmp|top|btop|htop|make|pwd|docker ps|git status|git diff|git diff --cached|git log --oneline|git log --graph --oneline)'

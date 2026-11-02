@@ -1,0 +1,9 @@
+# Hide everything by default
+/*
+# Show untracked files in these places
+!/.gitignore
+!/.config/
+/.config/*
+!/.config/nvim/
+!/.config/zsh/
+.DS_Store
