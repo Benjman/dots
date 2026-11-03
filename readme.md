@@ -5,9 +5,8 @@
 Clone the repo and set it up to manage dots:
 
 ```sh
-git clone --bare git@github.com:Benjman/dots.git $XDG_DATA_HOME/repos/dots/.git
-alias dots="git --git-dir=$XDG_DATA_HOME/repos/dots/.git --work-tree=$HOME"
-dots config --local status.showUntrackedFiles false
+git clone --bare git@github.com:Benjman/dots.git ~/.local/share/repos/dots/.git
+alias dots="git --git-dir=$HOME/.local/share/repos/dots/.git --work-tree=$HOME"
 dots checkout
 dots checkout  # see "Git hooks" below
 exec zsh
@@ -15,10 +14,10 @@ exec zsh
 
 ## Git hooks
 
-`dots` is configured (via `.config/git/dots-hooks/`, wired up through `.config/git/dots.config`'s `core.hooksPath`) to run drop-in scripts on `pre-commit`, `post-checkout`, `post-merge`, and `pre-push`. See `.config/git/dots-hooks/*.d/` for the current set, notably `post-checkout.d/10-bootstrap.sh`, which creates required XDG directories and initializes submodules if any are uninitialized.
+Repos under `~/.local/share/repos/` use the hooks in `.config/git/hooks/`, dispatched per repo by `dispatch.sh` (see its header). This repo's live in `.config/git/hooks/dots/`; notably `post-checkout.d/10-bootstrap.sh` creates XDG dirs and initializes submodules.
 
-`core.hooksPath` only becomes active once `~/.config/git/config`'s `includeIf` for this repo's gitdir is on disk and matches — which isn't true yet during the very first `dots checkout` above (that command is what writes the file in the first place). That's why the sequence above ends with a second, otherwise-no-op `dots checkout`: by that point `hooksPath` is live, so this second checkout actually triggers `post-checkout.d/10-bootstrap.sh` and exercises the bootstrap for real (creating XDG dirs, initializing submodules). On every checkout after that (branch switches, future machines), it just runs automatically.
+The hooks only activate once the first `dots checkout` has written `~/.config/git/config`, so the second checkout is what runs the bootstrap.
 
-Note the clone path must end in `/.git` — it's matched literally (no normalization) against `dots.config`'s `includeIf "gitdir:...dots/.git"` and against `DOTS_PREFIX` in `.config/zsh/rc.d/git.zsh`. A bare clone without that suffix silently breaks both the hooks and every `dots`/`dflg`/`lazygit` helper.
+The clone path must be exactly `~/.local/share/repos/dots/.git` - the hooks and the `dots`/`dflg`/`lazygit` helpers in `.config/zsh/rc.d/50-git.zsh` depend on it.
 
-Don't run `dots submodule update --init` directly using the `alias dots=... --work-tree=...` form above — `git submodule` refuses to run when both `--git-dir` and `--work-tree` are set explicitly (a known quirk of the bare-repo-as-dotfiles trick). That's exactly why the second `dots checkout` handles submodule init instead, via the hook (which uses `GIT_DIR` + `-C` rather than `--work-tree`). Once you're on the `dots()` zsh function (`.config/zsh/rc.d/git.zsh`, active after `exec zsh`), submodule commands still shouldn't be run through it directly for the same reason.
+Don't run `dots submodule ...`: `git submodule` refuses to run with both a git dir and work tree set. The bootstrap hook handles it instead.
