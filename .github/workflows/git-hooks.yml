@@ -33,7 +33,6 @@ jobs:
         # checkout writes that file to disk, so no hooks should fire here.
         run: |
           dots() { env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME HOME="$SCRATCH_HOME" GIT_DIR="$SCRATCH_HOME/.local/share/repos/dots/.git" GIT_WORK_TREE="$SCRATCH_HOME" git "$@"; }
-          dots config --local status.showUntrackedFiles false
           out=$(dots checkout 2>&1)
           echo "$out"
           if echo "$out" | grep -qi "post-checkout: initializing submodules"; then
@@ -58,7 +57,7 @@ jobs:
         run: |
           dots() { env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME HOME="$SCRATCH_HOME" GIT_DIR="$SCRATCH_HOME/.local/share/repos/dots/.git" GIT_WORK_TREE="$SCRATCH_HOME" git "$@"; }
           echo 'AKIAABCDEFGHIJKLMNOP' > "$SCRATCH_HOME/secret-probe.txt"
-          dots add secret-probe.txt
+          dots add -f secret-probe.txt
           if dots -c user.name=ci -c user.email=ci@example.com commit -m "should be blocked" >/tmp/secret-commit.log 2>&1; then
             echo "::error::commit with a staged secret was NOT blocked"
             cat /tmp/secret-commit.log
@@ -89,7 +88,7 @@ jobs:
           dots() { env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME HOME="$SCRATCH_HOME" GIT_DIR="$SCRATCH_HOME/.local/share/repos/dots/.git" GIT_WORK_TREE="$SCRATCH_HOME" git "$@"; }
           before=$(dots rev-parse HEAD)
           echo "harmless" > "$SCRATCH_HOME/harmless-probe.txt"
-          dots add harmless-probe.txt
+          dots add -f harmless-probe.txt
           dots -c user.name=ci -c user.email=ci@example.com commit -m "harmless probe commit"
           after=$(dots rev-parse HEAD)
           [ "$before" != "$after" ] || { echo "::error::a legitimate commit did not advance HEAD"; exit 1; }
