@@ -61,5 +61,10 @@ alias -- -='cd -'
 # Tool-specific, guarded on the tool actually being installed
 ((${+commands[claude]})) && alias cl="claude"
 ((${+commands[lazydocker]})) && alias ld="lazydocker"
-((${+commands[tmux]})) && alias tmux="tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf"
-((${+commands[wget]})) && alias wget="wget --hsts-file=$XDG_CACHE_HOME/wget-hsts"
+((${+commands[tmux]})) && alias tmux='tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf'
+((${+commands[wget]})) && alias wget='wget --hsts-file=$XDG_CACHE_HOME/wget-hsts'
+
+# Superior aliases for people of culture
+alias :q="exit"
+alias :wq="exit"
+alias :wqa="exit"
