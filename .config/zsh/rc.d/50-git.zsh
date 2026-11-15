@@ -21,6 +21,22 @@ if ! git config --get user.email >/dev/null 2>&1; then
   print -u2 "git: no user.email configured; run \`git-identity\` to set it."
 fi
 
+# `git worktree add` → cd into the new worktree after hooks finish.
+# Detects the new path by diffing `git worktree list` before/after, so any
+# argument form (-b, --detach, commit-ish, ...) works.
+git() {
+  if [[ $1 == worktree && $2 == add ]]; then
+    local before new
+    before=$(command git worktree list --porcelain | grep '^worktree ' | sort)
+    command git "$@" || return
+    new=$(comm -13 <(print -r -- "$before") \
+      <(command git worktree list --porcelain | grep '^worktree ' | sort))
+    [[ -n $new ]] && cd "${new#worktree }"
+  else
+    command git "$@"
+  fi
+}
+
 DOTS_PREFIX=(GIT_DIR="$REPOS/dots/.git" GIT_WORK_TREE="$HOME")
 
 if command -v lazygit >/dev/null; then
@@ -51,6 +67,5 @@ wtadd() {
     branch="${subject}"
   fi
 
-  git worktree add "$dir" -b "$branch" || return 1
-  cd "$dir" || return 1
+  git worktree add "$dir" -b "$branch"
 }
