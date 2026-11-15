@@ -4,6 +4,8 @@
 !/.gitignore
 !/.config/
 /.config/*
+!/.config/hypr/
 !/.config/nvim/
 !/.config/zsh/
 .DS_Store
+.luarc.json
