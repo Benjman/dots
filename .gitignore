@@ -5,6 +5,7 @@
 !/.config/
 /.config/*
 !/.config/hypr/
+!/.config/kitty/
 !/.config/nvim/
 !/.config/zsh/
 .DS_Store
