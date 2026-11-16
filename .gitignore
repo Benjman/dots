@@ -4,6 +4,10 @@
 !/.gitignore
 !/.config/
 /.config/*
+!/.config/claude/
+/.config/claude/*
+!/.config/claude/settings.json
+!/.config/claude/statusline-command.sh
 !/.config/hypr/
 !/.config/kitty/
 !/.config/nvim/
