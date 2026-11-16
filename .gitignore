@@ -9,6 +9,7 @@
 !/.config/claude/hooks/
 !/.config/claude/settings.json
 !/.config/claude/statusline-command.sh
+!/.config/git/
 !/.config/hypr/
 !/.config/kitty/
 !/.config/nvim/
