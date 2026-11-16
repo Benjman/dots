@@ -1,6 +1,6 @@
 export FLUTTER_HOME="$REPOS/flutter"
 if [[ -d "$FLUTTER_HOME/bin" ]]; then
-  path=("$FLUTTER_HOME/bin" $path[@])
+  path=("$FLUTTER_HOME/bin" "${path[@]}")
 fi
 
 [[ $OSTYPE == darwin* ]] && alias flutter="flutter -d macos"

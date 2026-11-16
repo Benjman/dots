@@ -2,9 +2,12 @@ autoload -Uz compinit
 
 # Full compinit (with compaudit) only if the dump is missing or older than 24h;
 # otherwise -C skips the audit, which is the bulk of startup cost.
-() {
+_zsh_compinit() {
+  zmodload zsh/datetime
+  zmodload -F zsh/stat b:zstat
   local zcompdump="$ZSH_CACHE/zcompdump"
-  if [[ -f $zcompdump && -z ${zcompdump}(#qN.mh+24) ]]; then
+  local -a mtime
+  if zstat -A mtime +mtime -- "$zcompdump" 2>/dev/null && (( EPOCHSECONDS - mtime[1] < 86400 )); then
     compinit -C -d "$zcompdump"
   else
     compinit -d "$zcompdump"
@@ -12,8 +15,11 @@ autoload -Uz compinit
     zcompile "$zcompdump" 2>/dev/null
   fi
 }
+_zsh_compinit
+unset -f _zsh_compinit
 
 zstyle ':completion:*' menu select                     # arrow-key driven menu
+# shellcheck disable=SC2296 # zsh (s) flag: split on :
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" # colored completion lists
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*' # case-insensitive + partial
 zstyle ':completion:*' completer _expand _complete _match _correct _approximate

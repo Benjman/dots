@@ -44,10 +44,10 @@ symlink_config_dir lazygit
 symlink_config_dir qutebrowser
 unset -f symlink_config_dir
 
-[[ -n "$BROWSER" ]] && launchctl setenv BROWSER $BROWSER
-[[ -n "$EDITOR" ]] && launchctl setenv EDITOR $EDITOR
-[[ -n "$PAGER" ]] && launchctl setenv PAGER $PAGER
+[[ -n "$BROWSER" ]] && launchctl setenv BROWSER "$BROWSER"
+[[ -n "$EDITOR" ]] && launchctl setenv EDITOR "$EDITOR"
+[[ -n "$PAGER" ]] && launchctl setenv PAGER "$PAGER"
 
 # Terminal.app starts login shells at / ; don't clobber the cwd of
 # every other interactive shell (new kitty tabs, tmux splits, subshells).
-[[ -o login && $PWD == / ]] && cd "$HOME"
+[[ -o login && $PWD == / ]] && { cd "$HOME" || return; }

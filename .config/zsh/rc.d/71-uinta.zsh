@@ -14,7 +14,7 @@ uinta() {
   d) cmd=dir ;;
   pm) cmd=project-management ;;
   r) cmd=repo ;;
-  t) cmd=test ;;
+  t) cmd="test" ;;
   esac
 
   case "$cmd" in
@@ -25,11 +25,11 @@ uinta() {
       cmake -B build . || return 1
     fi
     echo "→ Building..."
-    make -j$(nproc) --directory build
+    make -j"$(nproc)" --directory build
     ;;
 
   dir)
-    cd "$UINTA_HOME"
+    cd "$UINTA_HOME" || return 1
     echo "→ $(pwd)"
     return
     ;;
@@ -37,11 +37,11 @@ uinta() {
   project-management)
     cd "$NEXTCLOUD_DIR/documents/uinta-project-management" || return 1
     nvim -c "lua require('persistence').load()"
-    cd - >/dev/null
+    cd - >/dev/null || return
     ;;
 
   repo)
-    cd "$REPOS/uinta"
+    cd "$REPOS/uinta" || return 1
     echo "→ $(pwd)"
     lazygit
     return
@@ -58,7 +58,7 @@ uinta() {
     fi
 
     echo "→ Building..."
-    make -j$(nproc) --directory build || return 1
+    make -j"$(nproc)" --directory build || return 1
 
     echo "→ Running tests with ctest..."
     if (($# > 0)); then
@@ -66,13 +66,14 @@ uinta() {
     else
       ctest --test-dir "$build_dir" --output-on-failure --stop-on-failure
     fi
+    local rc=$?
 
-    cd - >/dev/null
-    return $?
+    cd - >/dev/null || return
+    return $rc
     ;;
 
   "")
-    cd "$UINTA_HOME"
+    cd "$UINTA_HOME" || return 1
     nvim -c "lua require('persistence').load()"
     ;;
 
@@ -87,6 +88,7 @@ uinta() {
 _uinta() {
   # Only consider the first argument
   if ((CURRENT == 2)); then
+    # shellcheck disable=SC2034 # read by name by _describe
     local -a commands=(
       "b:build the project"
       "d:go to source directory"
@@ -99,12 +101,15 @@ _uinta() {
   fi
 
   # Complete for tests
-  if ((CURRENT == 3)) && [[ $words[2] == t ]]; then
+  # shellcheck disable=SC2154 # $words is set by the completion system
+  if ((CURRENT == 3)) && [[ ${words[2]} == t ]]; then
     if [[ -d "$UINTA_HOME/build" ]]; then
       local -a tests
       local test_bin
-      for test_bin in "$UINTA_HOME/build"/src/*/test/*_test(N); do
-        tests+=(${(f)"$("$test_bin" --gtest_list_tests 2>/dev/null | grep -E '^\w+\.' | sed 's/\.$//')"})
+      setopt localoptions null_glob
+      for test_bin in "$UINTA_HOME/build"/src/*/test/*_test; do
+        # shellcheck disable=SC2296 # zsh (f) flag: split on newlines
+        tests+=("${(@f)$("$test_bin" --gtest_list_tests 2>/dev/null | grep -E '^\w+\.' | sed 's/\.$//')}")
       done
       if ((${#tests[@]} > 0)); then
         _describe "test suites" tests

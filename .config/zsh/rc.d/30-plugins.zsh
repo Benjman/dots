@@ -1,9 +1,10 @@
 # Plugin configuration
+# shellcheck disable=SC2034 # read by zsh-autosuggestions
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=1'
 
-local plugin_home="$ZSH_STATE/plugins"
+typeset plugin_home="$ZSH_STATE/plugins"
 
-local -a plugins=(
+typeset -a plugins=(
   https://github.com/hlissner/zsh-autopair
   https://github.com/zsh-users/zsh-autosuggestions
   https://github.com/zsh-users/zsh-completions
@@ -13,11 +14,11 @@ local -a plugins=(
 )
 
 # Plugins that must be sourced after compinit; see 35-fzf.zsh
-local -a deferred_plugins=(
+typeset -a deferred_plugins=(
   fzf-tab
 )
 
-local repo= name= dir=
+typeset repo name dir
 for repo in "${plugins[@]}"; do
   name=${repo##*/}
   dir="$plugin_home/$name"

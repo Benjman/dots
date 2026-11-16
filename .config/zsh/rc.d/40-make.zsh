@@ -1,9 +1,11 @@
 if [[ $OSTYPE == darwin* ]]; then
-  export MAKEFLAGS="-j$(sysctl -n hw.ncpu)"
-  export CMAKE_BUILD_PARALLEL_LEVEL=$(sysctl -n hw.ncpu)
+  MAKEFLAGS="-j$(sysctl -n hw.ncpu)"
+  CMAKE_BUILD_PARALLEL_LEVEL=$(sysctl -n hw.ncpu)
+  export MAKEFLAGS CMAKE_BUILD_PARALLEL_LEVEL
 fi
 
 if [[ $OSTYPE == linux* ]]; then
-  export MAKEFLAGS="-j$(nproc)"
-  export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
+  MAKEFLAGS="-j$(nproc)"
+  CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
+  export MAKEFLAGS CMAKE_BUILD_PARALLEL_LEVEL
 fi

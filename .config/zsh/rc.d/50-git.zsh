@@ -17,7 +17,7 @@ git-identity() {
   print "Wrote git identity to $cfg"
 }
 
-if ! git config --get user.email >/dev/null 2>&1; then
+if ! command git config --get user.email >/dev/null 2>&1; then
   print -u2 "git: no user.email configured; run \`git-identity\` to set it."
 fi
 
@@ -31,7 +31,9 @@ git() {
     command git "$@" || return
     new=$(comm -13 <(print -r -- "$before") \
       <(command git worktree list --porcelain | grep '^worktree ' | sort))
-    [[ -n $new ]] && cd "${new#worktree }"
+    if [[ -n $new ]]; then
+      cd "${new#worktree }" || return
+    fi
   else
     command git "$@"
   fi

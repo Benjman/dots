@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+# shellcheck shell=bash # zsh; lint as the closest supported dialect
 # PreToolUse hook: only allow read-only git and gh commands.
 #
 # Reads the Bash tool call from stdin, finds every git/gh invocation in the

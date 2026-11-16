@@ -1,4 +1,4 @@
-local submodule_dir="$ZSH_STATE/plugins/powerlevel10k"
+typeset submodule_dir="$ZSH_STATE/plugins/powerlevel10k"
 
 if [[ ! -f "$submodule_dir/powerlevel10k.zsh-theme" ]]; then
   print -u2 "warning: powerlevel10k not found at $submodule_dir — run: dots submodule update --init"

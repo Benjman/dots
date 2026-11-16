@@ -13,13 +13,13 @@ _dots_config_edit() {
   "d") pwd ;;
   *)
     env "${DOTS_PREFIX[@]}" nvim
-    cd - >/dev/null
+    cd - >/dev/null || return
     ;;
   esac
 }
 
-hyprc() { _dots_config_edit "$XDG_CONFIG_HOME/hypr" "$1" }
-nvimc() { _dots_config_edit "$XDG_CONFIG_HOME/nvim" "$1" }
+hyprc() { _dots_config_edit "$XDG_CONFIG_HOME/hypr" "$1"; }
+nvimc() { _dots_config_edit "$XDG_CONFIG_HOME/nvim" "$1"; }
 
 zshc() {
   _dots_config_edit "$ZDOTDIR" "$1" || return 1
