@@ -19,13 +19,17 @@ extract() {
 
 # ── Create a temporary directory and cd into it ──────────────────────────
 tmp() {
-  local dir=$(mktemp -d "$XDG_RUNTIME_DIR/zsh.XXXXXX")
+  mkdir -p "$XDG_RUNTIME_DIR/zsh"
+  local dir
+  dir=$(mktemp -d "$XDG_RUNTIME_DIR/zsh/XXXXXX")
   echo "→ $dir"
-  cd "$dir"
+  cd "$dir" || return
 }
 
 scratch() {
-  local file=$(mktemp "$XDG_RUNTIME_DIR/zsh.XXXXXX").md
+  mkdir -p "$XDG_RUNTIME_DIR/zsh"
+  local file
+  file=$(mktemp "$XDG_RUNTIME_DIR/zsh/XXXXXX").md
   echo "→ $file"
   $EDITOR "$file"
 }
