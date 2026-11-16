@@ -5,6 +5,6 @@ fi
 
 [[ $OSTYPE == darwin* ]] && alias flutter="flutter -d macos"
 [[ $OSTYPE == linux* ]] && alias flutter="flutter -d linux"
-[[ -d "$HOME/.pub-cache/bin" ]] && path+=("$HOME/.pub-cache/bin")
+[[ -d "$PUB_CACHE/bin" ]] && path+=("$PUB_CACHE/bin")
 
 alias fl=flutter
