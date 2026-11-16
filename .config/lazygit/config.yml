@@ -3,6 +3,6 @@ gui:
     selectedLineBgColor:
       - reverse
 git:
-  pagers:
+  diffRenderers:
     - colorArg: never
-      pager: delta --dark --paging=never --tabs=2
+      command: delta --dark --paging=never --tabs=2
