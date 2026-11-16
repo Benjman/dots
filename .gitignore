@@ -6,6 +6,7 @@
 /.config/*
 !/.config/claude/
 /.config/claude/*
+!/.config/claude/hooks/
 !/.config/claude/settings.json
 !/.config/claude/statusline-command.sh
 !/.config/hypr/

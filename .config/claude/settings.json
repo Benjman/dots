@@ -7,10 +7,19 @@
       "Bash(az *)",
       "Bash(dart analyze *)",
       "Bash(find:*)",
-      "Bash(gh *)",
       "Bash(gh api *)",
-      "Bash(gh pr *)",
-      "Bash(gh run *)",
+      "Bash(gh issue list *)",
+      "Bash(gh issue view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr status *)",
+      "Bash(gh pr view *)",
+      "Bash(gh repo view *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(gh run watch *)",
+      "Bash(gh search *)",
       "Bash(grep *)",
       "Bash(npm run *)",
       "WebFetch(domain:github.com)"
@@ -29,6 +38,20 @@
       "Bash(git restore*)",
       "Bash(git rm*)",
       "Bash(rm -rf *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "zsh -f \"$CLAUDE_CONFIG_DIR/hooks/git-readonly.zsh\"",
+            "onFailure": "block"
+          }
+        ]
+      }
     ]
   },
   "worktree": {
