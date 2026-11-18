@@ -8,7 +8,6 @@ typeset -a plugins=(
   https://github.com/hlissner/zsh-autopair
   https://github.com/zsh-users/zsh-autosuggestions
   https://github.com/zsh-users/zsh-completions
-  https://github.com/zsh-users/zsh-history-substring-search
   https://github.com/z-shell/F-Sy-H
   https://github.com/Aloxaf/fzf-tab
 )
