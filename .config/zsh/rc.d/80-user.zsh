@@ -30,7 +30,7 @@ add-zsh-hook precmd _kittyUpdateTabTitle
 repos() {
   local dir="$REPOS/$1"
   if [[ -d "$dir" ]]; then
-    cd "$dir" || exit
+    cd "$dir" || return
     echo "→ $(pwd)"
     return
   fi
@@ -39,7 +39,7 @@ repos() {
   # shellcheck disable=SC2206 # zsh glob qualifier `(N/)`, not word splitting
   local matches=("$REPOS"/$1*(N/))
   if ((${#matches[@]} > 0)); then
-    cd "${matches[1]}" || exit
+    cd "${matches[1]}" || return
     echo "→ $(pwd)"
   else
     echo "\"$dir\" is not a directory."
