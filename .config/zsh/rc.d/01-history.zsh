@@ -11,7 +11,6 @@ setopt HIST_IGNORE_SPACE       # don’t store commands starting with space
 setopt HIST_REDUCE_BLANKS      # remove superfluous blanks before saving
 setopt HIST_SAVE_NO_DUPS       # don’t write duplicates when saving
 setopt HIST_VERIFY             # when using !! or !123, show the command before executing
-setopt INC_APPEND_HISTORY_TIME # write immediately + after each command (best of both worlds)
 setopt SHARE_HISTORY           # share history across all live zsh sessions
 
 # Noisy commands not worth recalling. HISTORY_IGNORE is zsh's built-in for
