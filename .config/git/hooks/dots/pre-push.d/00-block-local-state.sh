@@ -10,13 +10,23 @@ private_paths() {
 }
 
 while IFS=' ' read -r _ local_sha _ remote_sha; do
-  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-    range="$local_sha"
-  else
-    range="$remote_sha..$local_sha"
-  fi
+  # Branch deletion: nothing is being sent
+  case $local_sha in *[!0]*) ;; *) continue ;; esac
 
-  bad_files=$(git diff-tree -r --name-only "$range" 2>/dev/null | private_paths)
+  # Every commit being pushed: those after the remote's tip, or, for a new
+  # branch (or a remote tip we don't have locally), those not on any remote.
+  set -- "$local_sha" --not --remotes
+  case $remote_sha in
+  *[!0]*)
+    if git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+      set -- "$remote_sha..$local_sha"
+    fi
+    ;;
+  esac
+
+  # Per-commit file lists (-m includes merges), not the net diff, so a file
+  # added in one commit and deleted in a later one is still caught.
+  bad_files=$(git log -m --name-only --format= "$@" | sort -u | private_paths)
 
   if [ -n "$bad_files" ]; then
     echo "pre-push: refusing to push — commits contain private files (.local/state/, private hook dirs):" >&2
