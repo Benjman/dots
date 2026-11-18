@@ -1,20 +1,18 @@
-# Zsh initialization script to run 'pass git pull' once per day in background
-# This script should be sourced from ~/.zshrc
+# Run 'pass git pull' in the background at most once a day.
+zmodload zsh/datetime
 
-# Timestamp file to track last run
-timestamp_file="$ZSH_CACHE/pass_pull_timestamp"
+pass_pull_stamp="$ZSH_CACHE/pass_pull_timestamp"
+pass_pull_last=
+[[ -r $pass_pull_stamp ]] && pass_pull_last=$(<"$pass_pull_stamp")
+# An empty or corrupt stamp counts as never pulled
+[[ -z $pass_pull_last || $pass_pull_last == *[^0-9]* ]] && pass_pull_last=0
 
-# Get current time in seconds since epoch
-current_time=$(date +%s)
-
-# Check if timestamp file exists and if less than 24 hours have passed
-if [[ ! -f "$timestamp_file" ]] || [[ $((current_time - $(cat "$timestamp_file"))) -gt 86400 ]]; then
-  # Check if git has a remote before pulling
+if (( EPOCHSECONDS - pass_pull_last > 86400 )); then
   if pass git remote >/dev/null 2>&1; then
-    # Run pass git pull in background, suppress normal output, log errors only
-    pass git pull >/dev/null 2>>"$ZSH_CACHE/pass_pull_error.log" &
+    # Backgrounded inside a subshell so job control doesn't print "[1] <pid>"
+    (pass git pull >/dev/null 2>>"$ZSH_CACHE/pass_pull_error.log" &)
   fi
-
-  # Update timestamp file with current time
-  echo "$current_time" >"$timestamp_file"
+  echo "$EPOCHSECONDS" >"$pass_pull_stamp"
 fi
+
+unset -v pass_pull_stamp pass_pull_last
