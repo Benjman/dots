@@ -9,15 +9,24 @@ files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sh|zsh)$')
 
 [ -z "$files" ] && exit 0
 
-files_file=$(mktemp)
-trap 'rm -f "$files_file"' EXIT
-echo "$files" >"$files_file"
+# Lint what's staged, not the working tree: export the staged versions, plus
+# every .shellcheckrc so per-directory settings still apply, to a scratch tree.
+staged=$(mktemp -d)
+trap 'rm -rf "$staged"' EXIT
+{
+  echo "$files"
+  git ls-files | grep -E '(^|/)\.shellcheckrc$'
+} | git checkout-index --stdin --prefix="$staged/" || exit 1
+
+cd "$staged" || exit 1
 
 failed=0
 while IFS= read -r f; do
   [ -f "$f" ] || continue
   shellcheck --shell=bash --exclude=SC1090,SC1091 "$f" || failed=1
-done <"$files_file"
+done <<EOF_FILES
+$files
+EOF_FILES
 
 [ "$failed" -eq 0 ] && exit 0
 
