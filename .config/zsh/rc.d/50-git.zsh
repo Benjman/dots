@@ -27,10 +27,10 @@ fi
 git() {
   if [[ $1 == worktree && $2 == add ]]; then
     local before new
-    before=$(command git worktree list --porcelain | grep '^worktree ' | sort)
+    before=$(command git worktree list --porcelain | command grep '^worktree ' | sort)
     command git "$@" || return
     new=$(comm -13 <(print -r -- "$before") \
-      <(command git worktree list --porcelain | grep '^worktree ' | sort))
+      <(command git worktree list --porcelain | command grep '^worktree ' | sort))
     if [[ -n $new ]]; then
       cd "${new#worktree }" || return
     fi

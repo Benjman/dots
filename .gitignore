@@ -1,6 +1,7 @@
 # Hide everything by default
 /*
 # Show untracked files in these places
+!/.github
 !/.gitignore
 !/.config/
 /.config/*

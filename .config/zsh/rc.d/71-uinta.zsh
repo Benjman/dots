@@ -109,7 +109,7 @@ _uinta() {
       setopt localoptions null_glob
       for test_bin in "$UINTA_HOME/build"/src/*/test/*_test; do
         # shellcheck disable=SC2296 # zsh (f) flag: split on newlines
-        tests+=("${(@f)$("$test_bin" --gtest_list_tests 2>/dev/null | grep -E '^\w+\.' | sed 's/\.$//')}")
+        tests+=("${(@f)$("$test_bin" --gtest_list_tests 2>/dev/null | command grep -E '^\w+\.' | sed 's/\.$//')}")
       done
       if ((${#tests[@]} > 0)); then
         _describe "test suites" tests
