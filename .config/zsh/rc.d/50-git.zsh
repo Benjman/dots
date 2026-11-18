@@ -46,7 +46,7 @@ if command -v lazygit >/dev/null; then
     if git rev-parse --git-dir &>/dev/null 2>&1; then
       command lazygit "$@"
     elif [[ -n "$(env "${DOTS_PREFIX[@]}" git ls-files "$PWD" 2>/dev/null)" ]]; then
-      env "${DOTS_PREFIX[@]}" command lazygit "$@"
+      env "${DOTS_PREFIX[@]}" lazygit "$@"
     else
       command lazygit "$@"
     fi

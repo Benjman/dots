@@ -37,7 +37,13 @@ zstyle ':completion:*' show-completer true
 zstyle ':completion:*:approximate:*' max-errors 1 numeric
 
 # Better process listing (kill, pgrep, etc.)
-zstyle ':completion:*:processes' command 'ps -axww -o pid,user,cmd --forest'
+# `command` bypasses the ps→procs alias, since completion evals this string.
+# BSD ps (macOS) has no --forest; GNU ps gets the process tree.
+if [[ $OSTYPE == linux* ]]; then
+  zstyle ':completion:*:processes' command 'command ps -A -ww -o pid,user,args --forest'
+else
+  zstyle ':completion:*:processes' command 'command ps -A -ww -o pid,user,command'
+fi
 zstyle ':completion:*:*:kill:*' menu yes select
 zstyle ':completion:*:kill:*' force-list always
 zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
