@@ -58,5 +58,5 @@ fi
 unset -v launchctl_stamp launchctl_env
 
 # Terminal.app starts login shells at / ; don't clobber the cwd of
-# every other interactive shell (new kitty tabs, tmux splits, subshells).
+# every other interactive shell (new kitty tabs, subshells).
 [[ -o login && $PWD == / ]] && { cd "$HOME" || return; }

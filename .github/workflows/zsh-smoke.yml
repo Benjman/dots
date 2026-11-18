@@ -50,18 +50,18 @@ jobs:
         run: |
           shim_dir="$RUNNER_TEMP/shims"
           mkdir -p "$shim_dir"
-          for tool in lazydocker tmux wget claude lazygit; do
+          for tool in lazydocker wget claude lazygit; do
             printf '#!/bin/sh\ntrue\n' >"$shim_dir/$tool"
             chmod +x "$shim_dir/$tool"
           done
           env -i HOME="$GITHUB_WORKSPACE" PATH="$shim_dir:/usr/bin:/bin" \
             ZDOTDIR="$GITHUB_WORKSPACE/.config/zsh" \
             zsh -c 'source .config/zsh/rc.d/90-aliases.zsh
-              alias ld >/dev/null && alias cl >/dev/null && alias tmux >/dev/null && alias wget >/dev/null && echo ALIASES_DEFINED_OK'
+              alias ld >/dev/null && alias cl >/dev/null && alias wget >/dev/null && echo ALIASES_DEFINED_OK'
 
       - name: Guarded aliases are ABSENT when their tool is missing
         # PATH has to point at a directory that is genuinely empty. /usr/bin:/bin
-        # is not "missing": the ubuntu images ship wget and tmux there, so the
+        # is not "missing": the ubuntu images ship wget there, so the
         # guards fire correctly and the assertion fails anyway. Resolve zsh to an
         # absolute path first, since the empty PATH can no longer find it.
         run: |
@@ -71,6 +71,6 @@ jobs:
           out=$(env -i HOME="$GITHUB_WORKSPACE" PATH="$empty_dir" \
             ZDOTDIR="$GITHUB_WORKSPACE/.config/zsh" \
             "$zsh_bin" -c 'source .config/zsh/rc.d/90-aliases.zsh
-              (alias ld || alias cl || alias tmux || alias wget) >/dev/null 2>&1 && echo UNEXPECTED_ALIAS || echo ALIASES_ABSENT_OK')
+              (alias ld || alias cl || alias wget) >/dev/null 2>&1 && echo UNEXPECTED_ALIAS || echo ALIASES_ABSENT_OK')
           echo "$out"
           [ "$out" = "ALIASES_ABSENT_OK" ]

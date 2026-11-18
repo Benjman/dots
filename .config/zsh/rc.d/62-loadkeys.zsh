@@ -1,6 +1,6 @@
 command -v loadkeys >/dev/null 2>&1 || return 0
 
-# loadkeys only affects the Linux console; skip in terminal emulators, tmux, ssh, etc.
+# loadkeys only affects the Linux console; skip in terminal emulators, ssh, etc.
 case "$TTY" in
   /dev/tty[0-9]*) ;;
   *) return 0 ;;
