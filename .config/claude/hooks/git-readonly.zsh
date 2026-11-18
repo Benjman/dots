@@ -1,11 +1,20 @@
 #!/usr/bin/env zsh
 # shellcheck shell=bash # zsh; lint as the closest supported dialect
-# PreToolUse hook: only allow read-only git and gh commands.
+# PreToolUse hook: only allow read-only git and gh commands, unless the Bash
+# sandbox is provably enforced.
+#
+# Where it is (see sandbox_probe: on, no unsandboxed retries, fail if
+# unavailable, real repos' .git write-protected, and nothing of higher
+# precedence such as org-managed settings turning any of that off), git
+# commands that only touch history, refs or the index are allowed too: they
+# work in scratch repos and the sandbox stops them on real ones. Commands
+# that can discard working-tree changes stay denied either way, since the
+# sandbox doesn't protect working files.
 #
 # Reads the Bash tool call from stdin, finds every git/gh invocation in the
 # command (across ;, &&, |, $(...), backticks, sh -c, eval, xargs, find -exec,
 # env/sudo/timeout wrappers) and denies the call unless each one is on the
-# read-only allowlist below. Anything unrecognized is denied.
+# allowlist below. Anything unrecognized (including git aliases) is denied.
 #
 # Tokenizing uses zsh's own parser via ${(z)...}.
 
@@ -150,6 +159,96 @@ git_symbolic_ref_ok() {
   flags_within -q --quiet --short --recurse --no-recurse && (( ${#pos[@]} <= 1 ))
 }
 
+# GIT_* variables that can't make git run another program or write.
+git_env_ok() {
+  local name=${1%%=*}
+  [[ $name == GIT_* ]] || return 0
+  case $name in
+    GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL|GIT_AUTHOR_DATE) return 0 ;;
+    GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL|GIT_COMMITTER_DATE) return 0 ;;
+    GIT_DIR|GIT_WORK_TREE|GIT_TERMINAL_PROMPT|GIT_OPTIONAL_LOCKS) return 0 ;;
+    GIT_TRACE*) return 0 ;;
+  esac
+  deny "setting \`$name\` can make git run other commands"
+}
+
+# --- git, sandboxed ------------------------------------------------------------
+
+# Only write history, refs or the index, all of which live in .git where the
+# sandbox guards real repos.
+GIT_SANDBOXED=(
+  add am bisect branch cherry-pick clone commit fetch gc init merge mv notes
+  pull push rebase reflog remote revert submodule symbolic-ref tag
+)
+
+# Writes go to .git/config unless pointed at a config file outside .git.
+sandboxed_git_config_ok() {
+  vopts=(-f --file --blob --type --default)
+  split_args "$@"
+  ! has_flag --global --system -f --file --edit -e
+}
+
+# `git checkout <path>` discards changes and looks just like switching to a
+# branch, so only allow the unambiguous branch-creating forms; use `switch`.
+sandboxed_git_checkout_ok() {
+  in_list -- "$@" && return 1
+  vopts=(-b -B --orphan)
+  split_args "$@"
+  has_flag -b -B --orphan || return 1
+  ! has_flag -f --force -p --patch --ours --theirs -m --merge --conflict \
+    --pathspec-from-file && (( ${#pos[@]} <= 1 ))
+}
+
+sandboxed_git_switch_ok() { split_args "$@"; ! has_flag -f --force --discard-changes; }
+sandboxed_git_reset_ok()  { split_args "$@"; ! has_flag --hard; }
+sandboxed_git_rm_ok()     { split_args "$@"; expand_short; ! has_flag -f --force; }
+sandboxed_git_stash_ok()  { split_args "$@"; ! in_list "${pos[1]-}" drop clear; }
+
+# Unstaging only: `restore` without --staged, or with --worktree, overwrites files.
+sandboxed_git_restore_ok() {
+  vopts=(-s --source)
+  split_args "$@"
+  expand_short
+  has_flag -S --staged && ! has_flag -W --worktree
+}
+
+sandboxed_git_worktree_ok() {
+  split_args "$@"
+  expand_short
+  [[ ${pos[1]-} != remove ]] || ! has_flag -f --force
+}
+
+# Prints "enforced" only if every settings file Claude Code reads keeps the
+# sandbox on and inescapable. Fails closed: a missing key, a file jq can't
+# parse, or a source we can't read (MDM plists) all mean not enforced.
+sandbox_probe() {
+  setopt localoptions null_glob
+  local cfg=${CLAUDE_CONFIG_DIR:-$HOME/.claude} f
+  jq -e '.sandbox | .enabled == true and .allowUnsandboxedCommands == false
+    and .failIfUnavailable == true
+    and (.filesystem.denyWrite // [] | index("~/**/.git") != null)' \
+    "$cfg/settings.json" >/dev/null 2>&1 || return
+  [[ -e "/Library/Managed Preferences/com.anthropic.claudecode.plist" ]] && return
+  for f in "$cfg"/settings.json "$cfg"/settings.local.json "$cfg"/remote-settings.json \
+    "/Library/Application Support/ClaudeCode"/managed-settings.json \
+    "/Library/Application Support/ClaudeCode"/managed-settings.d/*.json \
+    /etc/claude-code/managed-settings.json /etc/claude-code/managed-settings.d/*.json \
+    "${CLAUDE_PROJECT_DIR:-/nonexistent}"/.claude/settings.json \
+    "${CLAUDE_PROJECT_DIR:-/nonexistent}"/.claude/settings.local.json; do
+    [[ -e $f ]] || continue
+    jq -e '.sandbox // {} | (.enabled == false or .allowUnsandboxedCommands == true
+      or .failIfUnavailable == false or (.excludedCommands // [] | length > 0)) | not' \
+      "$f" >/dev/null 2>&1 || return
+  done
+  print enforced
+}
+
+sandbox_state=""
+sandbox_enforced() {
+  [[ -n $sandbox_state ]] || sandbox_state=$(sandbox_probe) || sandbox_state=no
+  [[ $sandbox_state == enforced ]]
+}
+
 check_git() {
   while (( $# )); do
     case $1 in
@@ -168,12 +267,26 @@ check_git() {
   for a in "$@"; do
     case $a in
       --output|--output=*) deny "\`git $sub --output\` writes files"; return ;;
+      # Each of these names a program for git to run.
+      --upload-pack*|--receive-pack*|--exec|--exec=*|-O*|--open-files-in-pager*)
+        deny "\`git $sub $a\` runs an arbitrary program"; return ;;
+    esac
+    case $sub:$a in
+      clone:-u*|ls-remote:-u*|clone:-c*|clone:--config|clone:--config=*)
+        deny "\`git $sub $a\` runs an arbitrary program"; return ;;
     esac
   done
   in_list "$sub" "${GIT_READ[@]}" && return 0
   local fn=git_${sub//-/_}_ok
   if typeset -f "$fn" >/dev/null && "$fn" "$@"; then return 0; fi
-  deny "\`git $sub\` is not a read-only git command"
+  if sandbox_enforced; then
+    in_list "$sub" "${GIT_SANDBOXED[@]}" && return 0
+    fn=sandboxed_$fn
+    if typeset -f "$fn" >/dev/null && "$fn" "$@"; then return 0; fi
+    deny "\`git $sub\` could discard uncommitted work"
+    return
+  fi
+  deny "\`git $sub\` is not a read-only git command (and the Bash sandbox isn't enforced here)"
 }
 
 # --- gh ----------------------------------------------------------------------
@@ -256,10 +369,14 @@ WRAPPER_VALUE_OPTS=(-I -n -P -L -s -d -E -u -g -k)
 SHELLS=(sh bash zsh dash ksh fish)
 
 check_words() {
-  while (( $# )) && [[ $1 == [A-Za-z_][A-Za-z0-9_]#=* ]]; do shift; done
+  while (( $# )) && [[ $1 == [A-Za-z_][A-Za-z0-9_]#=* ]]; do
+    git_env_ok "$1" || return
+    shift
+  done
   while (( $# )) && in_list "${1##*/}" "${WRAPPERS[@]}"; do
     shift
     while (( $# )) && [[ $1 == -* || $1 == [A-Za-z_][A-Za-z0-9_]#=* || $1 == [0-9.]##[smhd]# ]]; do
+      [[ $1 == -* ]] || git_env_ok "$1" || return
       if in_list "$1" "${WRAPPER_VALUE_OPTS[@]}" && (( $# > 1 )); then shift; fi
       shift
     done
@@ -268,12 +385,16 @@ check_words() {
   local cmd=${1##*/}
   shift
 
+  local a
   case $cmd in
     git)  check_git "$@"; return ;;
     gh)   check_gh "$@"; return ;;
     eval) check_command "$*"; return ;;
+    export|typeset|declare|local|readonly|setenv)
+      for a in "$@"; do git_env_ok "$a" || return; done
+      return 0
+      ;;
   esac
-  local a
   if in_list "$cmd" "${SHELLS[@]}"; then
     while (( $# > 1 )); do
       a=$1
