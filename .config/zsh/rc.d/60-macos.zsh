@@ -44,9 +44,18 @@ symlink_config_dir lazygit
 symlink_config_dir qutebrowser
 unset -f symlink_config_dir
 
-[[ -n "$BROWSER" ]] && launchctl setenv BROWSER "$BROWSER"
-[[ -n "$EDITOR" ]] && launchctl setenv EDITOR "$EDITOR"
-[[ -n "$PAGER" ]] && launchctl setenv PAGER "$PAGER"
+# launchctl's environment lasts for the login session, so only push it when
+# the values or the session ($SECURITYSESSIONID) changed, instead of forking
+# launchctl three times in every new shell.
+launchctl_stamp="$XDG_RUNTIME_DIR/zsh-launchctl-env"
+launchctl_env="$SECURITYSESSIONID BROWSER=$BROWSER EDITOR=$EDITOR PAGER=$PAGER"
+if [[ ! -r $launchctl_stamp || "$(<"$launchctl_stamp")" != "$launchctl_env" ]]; then
+  [[ -n "$BROWSER" ]] && launchctl setenv BROWSER "$BROWSER"
+  [[ -n "$EDITOR" ]] && launchctl setenv EDITOR "$EDITOR"
+  [[ -n "$PAGER" ]] && launchctl setenv PAGER "$PAGER"
+  echo "$launchctl_env" >"$launchctl_stamp"
+fi
+unset -v launchctl_stamp launchctl_env
 
 # Terminal.app starts login shells at / ; don't clobber the cwd of
 # every other interactive shell (new kitty tabs, tmux splits, subshells).
