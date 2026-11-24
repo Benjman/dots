@@ -1,113 +1,100 @@
 #!/usr/bin/env bash
-# Claude Code statusline — Powerlevel10k lean style (macOS, nerdfont-v3)
-# Colors mirror p10k config:
-#   dir foreground:        256-color 31  (anchor: 39 bold, shortened: 103)
-#   vcs clean:             256-color 76  (green)
-#   vcs modified:          256-color 178 (yellow)
-#   vcs untracked:         256-color 39  (blue)
-#   vcs conflicted:        256-color 196 (red)
-#   model name (dim):      256-color 244 (grey)
+# Claude Code statusline — Powerlevel10k lean colors (nerdfont-v3)
+#   project:         256-color 39 bold (subdir: 31)
+#   vcs clean:       256-color 76  (green)
+#   vcs modified:    256-color 178 (yellow)
+#   vcs untracked:   256-color 39  (blue)
+#   vcs conflicted:  256-color 196 (red)
+#   session info:    256-color 244 (grey), separators 240
 
-# ── ANSI helpers ────────────────────────────────────────────────────────────
 c() { printf '\033[38;5;%sm' "$1"; }   # set 256-color foreground
-bold() { printf '\033[1m'; }
-reset() { printf '\033[0m'; }
+bold=$'\033[1m'
+reset=$'\033[0m'
+sep=" $(c 240)│ "
+# Emojis are single codepoints only: variation-selector ones (✏️, ⚠️) mis-measure in terminals
 
-# ── Read JSON from stdin ─────────────────────────────────────────────────────
-input=$(cat)
+# ── Session JSON: one jq call; fields missing in older versions come back empty
+IFS=$'\x1f' read -r cwd project model ctx cost added removed < <(
+  jq -r '[
+    (.cwd // .workspace.current_dir // ""),
+    (.workspace.project_dir // ""),
+    (.model.display_name // ""),
+    (.context_window.used_percentage // "" | tostring),
+    (.cost.total_cost_usd // "" | tostring),
+    (.cost.total_lines_added // 0 | tostring),
+    (.cost.total_lines_removed // 0 | tostring)
+  ] | join("\u001f")'
+)
 
-cwd=$(printf '%s' "$input" | jq -r '.cwd // .workspace.current_dir // ""')
-model=$(printf '%s' "$input" | jq -r '.model.display_name // ""')
-
-# ── OS icon (Apple ) ────────────────────────────────────────────────────────
-OS_ICON=$''   # nf-fa-apple  (nerdfont-v3)
-
-# ── Directory: shorten to ~-relative, show last 2 path components ─────────
-home="$HOME"
-if [[ "$cwd" == "$home" ]]; then
-  dir_display="~"
-elif [[ "$cwd" == "$home/"* ]]; then
-  rel="${cwd#"$home/"}"
-  # Count path components
-  IFS='/' read -ra parts <<< "$rel"
-  total=${#parts[@]}
-  if (( total <= 2 )); then
-    # shellcheck disable=SC2088 # literal display symbol, not meant to expand
-    dir_display="~/$rel"
-  else
-    # Show shortened prefix components + last component
-    # Each intermediate component truncated to first letter (like p10k truncate_to_unique)
-    short=""
-    for (( i=0; i < total-1; i++ )); do
-      if (( i == 0 )); then
-        short="${parts[i]:0:1}"
-      else
-        short="$short/${parts[i]:0:1}"
-      fi
-    done
-    # shellcheck disable=SC2088 # literal display symbol, not meant to expand
-    dir_display="~/$short/${parts[total-1]}"
-  fi
-else
-  IFS='/' read -ra parts <<< "${cwd#/}"
-  total=${#parts[@]}
-  if (( total <= 2 )); then
-    dir_display="$cwd"
-  else
-    short=""
-    for (( i=0; i < total-1; i++ )); do
-      if (( i == 0 )); then
-        short="${parts[i]:0:1}"
-      else
-        short="$short/${parts[i]:0:1}"
-      fi
-    done
-    dir_display="/$short/${parts[total-1]}"
-  fi
+# ── Directory: project name, plus the subdirectory when Claude has cd'd deeper
+project=${project:-$cwd}
+dir="📂 ${bold}$(c 39)${project##*/}${reset}"
+if [[ "$cwd" == "$project/"* ]]; then
+  dir+="$(c 31)/${cwd#"$project/"}"
 fi
 
-# ── Git status ───────────────────────────────────────────────────────────────
-BRANCH_ICON=$''   # nf-dev-git_branch  
-
+# ── Git: one status call; --no-optional-locks avoids fighting Claude's own git use
 git_part=""
-# shellcheck disable=SC2034 # capture swallows stdout; only exit status matters
-if git_dir=$(git -C "$cwd" rev-parse --git-dir 2>/dev/null); then
-  branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null \
-           || git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
+if status=$(git --no-optional-locks -C "$cwd" status --porcelain=v2 --branch 2>/dev/null); then
+  read -r branch ahead behind staged unstaged untracked conflicted < <(
+    awk '
+      /^# branch\.head /  { head = $3 }
+      /^# branch\.oid /   { oid = substr($3, 1, 7) }
+      /^# branch\.ab /    { a = substr($3, 2); b = substr($4, 2) }
+      /^[12] /            { if (substr($2, 1, 1) != ".") s++; if (substr($2, 2, 1) != ".") m++ }
+      /^u /               { u++ }
+      /^\? /              { q++ }
+      END {
+        if (head == "(detached)") head = oid
+        printf "%s %d %d %d %d %d %d\n", head, a, b, s, m, q, u
+      }
+    ' <<< "$status"
+  )
 
-  # Dirty check: staged, unstaged, untracked
-  staged=$(git -C "$cwd" diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
-  unstaged=$(git -C "$cwd" diff --name-only 2>/dev/null | wc -l | tr -d ' ')
-  untracked=$(git -C "$cwd" ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
-
-  if (( staged > 0 )); then
-    vcs_color=178   # modified — yellow
-    dirty=" +${staged}"
-  elif (( unstaged > 0 )); then
-    vcs_color=178   # modified — yellow
-    dirty=" !${unstaged}"
-  elif (( untracked > 0 )); then
-    vcs_color=39    # untracked — blue
-    dirty=" ?${untracked}"
-  else
-    vcs_color=76    # clean — green
-    dirty=""
+  if (( conflicted )); then vcs_color=196; mood=" 💥"
+  elif (( staged || unstaged )); then vcs_color=178; mood=" 🚧"
+  elif (( untracked )); then vcs_color=39; mood=" 🌱"
+  else vcs_color=76; mood=" ✨"
   fi
 
-  git_part=" $(c $vcs_color)${BRANCH_ICON} ${branch}${dirty}"
+  counts=""
+  (( behind ))     && counts+=" ⇣${behind}"
+  (( ahead ))      && counts+=" ⇡${ahead}"
+  (( conflicted )) && counts+=" ~${conflicted}"
+  (( staged ))     && counts+=" +${staged}"
+  (( unstaged ))   && counts+=" !${unstaged}"
+  (( untracked ))  && counts+=" ?${untracked}"
+
+  git_part=" 🌿 $(c "$vcs_color")${branch}${counts}${mood}"
 fi
 
-# ── Model name (right-aligned hint, grey) ────────────────────────────────────
-model_part=""
+# ── Session info ─────────────────────────────────────────────────────────────
+info=""
 if [[ -n "$model" ]]; then
-  model_part=" $(c 244)${model}"
+  case "$model" in   # macOS bash 3.2: no ${var,,}, so match both cases
+    *[Oo]pus*)     model_icon="🎼" ;;
+    *[Ss]onnet*)   model_icon="📜" ;;
+    *[Hh]aiku*)    model_icon="🌸" ;;
+    *[Ff]able*)    model_icon="📖" ;;
+    *)        model_icon="🤖" ;;
+  esac
+  info+="${sep}${model_icon} $(c 244)${model}"
 fi
 
-# ── Assemble ─────────────────────────────────────────────────────────────────
-printf '%s' \
-  "$(c 250)${OS_ICON}" \
-  " $(bold)$(c 39)${dir_display}$(reset)" \
-  "${git_part}" \
-  "${model_part}" \
-  "$(reset)"
-printf '\n'
+# Brain heats up as the context window fills toward compaction
+if [[ -n "$ctx" ]]; then
+  pct=${ctx%.*}
+  if (( pct >= 80 )); then ctx_color=196; ctx_icon="🔥"
+  elif (( pct >= 50 )); then ctx_color=178; ctx_icon="🥵"
+  else ctx_color=244; ctx_icon="🧠"
+  fi
+  info+="${sep}${ctx_icon} $(c "$ctx_color")${pct}%"
+fi
+
+[[ -n "$cost" ]] && info+="${sep}💸 $(c 244)$(printf '$%.2f' "$cost")"
+
+if (( added || removed )); then
+  info+="${sep}📝 $(c 76)+${added} $(c 196)−${removed}"
+fi
+
+printf '%s\n' "${dir}${git_part}${info}${reset}"

@@ -6,7 +6,6 @@
       "Bash(awk *)",
       "Bash(az *)",
       "Bash(dart analyze *)",
-      "Bash(find:*)",
       "Bash(gh api *)",
       "Bash(gh issue list *)",
       "Bash(gh issue view *)",
@@ -20,7 +19,6 @@
       "Bash(gh run view *)",
       "Bash(gh run watch *)",
       "Bash(gh search *)",
-      "Bash(grep *)",
       "Bash(npm run *)",
       "WebFetch(domain:github.com)"
     ],
@@ -54,16 +52,9 @@
       }
     ]
   },
-  "worktree": {
-    "baseRef": "fresh"
-  },
   "statusLine": {
     "type": "command",
     "command": "bash \"$CLAUDE_CONFIG_DIR/statusline-command.sh\""
-  },
-  "enabledPlugins": {
-    "swift-lsp@claude-plugins-official": true,
-    "clangd-lsp@claude-plugins-official": true
   },
   "effortLevel": "medium",
   "theme": "auto",
