@@ -4,7 +4,7 @@
 # Recomputed on every directory change and before every prompt, so it
 # tracks `cd` and `git checkout`/`switch` alike rather than going stale.
 _kittyUpdateTabTitle() {
-  [[ -n "$KITTY_WINDOW_ID" ]] && command -v kitty &>/dev/null || return
+  [[ -n "$KITTY_WINDOW_ID" && -z "$TMUX" ]] && command -v kitty &>/dev/null || return
 
   local title
   if [[ "$PWD" == "$REPOS"/* ]]; then
