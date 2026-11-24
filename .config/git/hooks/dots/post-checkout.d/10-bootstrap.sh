@@ -1,7 +1,8 @@
 #!/bin/sh
-# Idempotent first-run setup: ensure XDG base dirs exist, submodules are
-# initialized, and $HOME is sparse-checked-out. Safe to run on every checkout (branch switches included) since
-# every step is a no-op once done.
+# Idempotent first-run setup: ensure XDG base dirs exist and $HOME is
+# sparse-checked-out. Safe to run on every checkout (branch switches included)
+# since every step is a no-op once done. Submodules are handled by
+# 20-submodules.sh.
 
 : "${XDG_CACHE_HOME:=$HOME/.cache}"
 : "${XDG_CONFIG_HOME:=$HOME/.config}"
@@ -14,21 +15,10 @@ for d in "$XDG_CACHE_HOME/zsh" "$XDG_STATE_HOME/zsh/env" "$XDG_STATE_HOME/zsh/rc
   [ -d "$d" ] || mkdir -p "$d"
 done
 
-# git submodule specifically requires GIT_DIR + a cwd inside the work tree,
-# not GIT_WORK_TREE — the two combined make submodule refuse to run.
-dots_git() {
-  GIT_DIR="$XDG_DATA_HOME/repos/dots/.git" git -C "$HOME" "$@"
-}
-
-if dots_git submodule status 2>/dev/null | grep -q '^-'; then
-  echo "post-checkout: initializing submodules..."
-  dots_git submodule update --init
-fi
-
 # Keep repo plumbing out of $HOME via a sparse checkout; linked worktrees keep
 # full checkouts since the setting lands in the bare dir's config.worktree.
 # git still reads .gitignore/.gitmodules from the index when they're absent.
-# Unlike submodule, sparse-checkout needs an explicit GIT_WORK_TREE.
+# The bare dir has core.bare=true, so $HOME needs an explicit GIT_WORK_TREE.
 sparse_patterns='/*
 !/.github/
 !/.gitignore

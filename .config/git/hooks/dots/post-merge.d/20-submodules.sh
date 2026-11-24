@@ -1,0 +1,1 @@
+../post-checkout.d/20-submodules.sh

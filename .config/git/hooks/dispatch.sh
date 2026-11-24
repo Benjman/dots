@@ -6,8 +6,9 @@
 # (e.g. dots for repos/dots/.git and all of its worktrees).
 # For each hook, in order:
 #   1. post-checkout into a brand-new worktree or clone (all-zero previous
-#      HEAD) runs <repo>/worktree-init.d/*.sh from the worktree root, with
-#      git's repo-scoped env vars cleared
+#      HEAD) runs worktree-init.d/*.sh (every repo), then
+#      <repo>/worktree-init.d/*.sh, from the worktree root, with git's
+#      repo-scoped env vars cleared
 #   2. <repo>/<hook>.d/*.sh run with the hook's args and stdin
 #   3. the repo's own hooks/<hook> runs, if installed, since core.hooksPath
 #      otherwise hides it
@@ -42,7 +43,7 @@ run_dir() {
 }
 
 if [ -n "$repo" ] && [ "$hook_name" = post-checkout ] && [ "$3" = 1 ] &&
-  [ -d "$hooks_root/$repo/worktree-init.d" ]; then
+  { [ -d "$hooks_root/worktree-init.d" ] || [ -d "$hooks_root/$repo/worktree-init.d" ]; }; then
   case "$1" in
   *[!0]*) ;;
   *)
@@ -52,6 +53,7 @@ if [ -n "$repo" ] && [ "$hook_name" = post-checkout ] && [ "$3" = 1 ] &&
       # shellcheck disable=SC2046
       unset $(git rev-parse --local-env-vars)
       echo "hook: initializing new $repo worktree $(basename "$PWD")"
+      run_dir "$hooks_root/worktree-init.d"
       run_dir "$hooks_root/$repo/worktree-init.d"
     ) || exit
     ;;

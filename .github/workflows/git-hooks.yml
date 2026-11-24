@@ -35,7 +35,7 @@ jobs:
           dots() { env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME HOME="$SCRATCH_HOME" GIT_DIR="$SCRATCH_HOME/.local/share/repos/dots/.git" GIT_WORK_TREE="$SCRATCH_HOME" git "$@"; }
           out=$(dots checkout 2>&1)
           echo "$out"
-          if echo "$out" | grep -qi "post-checkout: initializing submodules"; then
+          if echo "$out" | grep -qi "post-checkout: hiding repo plumbing"; then
             echo "::error::bootstrap hook fired on the FIRST checkout — hooksPath activated too early"
             exit 1
           fi
@@ -47,7 +47,7 @@ jobs:
           dots() { env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME HOME="$SCRATCH_HOME" GIT_DIR="$SCRATCH_HOME/.local/share/repos/dots/.git" GIT_WORK_TREE="$SCRATCH_HOME" git "$@"; }
           out=$(dots checkout 2>&1)
           echo "$out"
-          echo "$out" | grep -qi "post-checkout: initializing submodules" || { echo "::error::bootstrap hook did not fire on the second checkout"; exit 1; }
+          echo "$out" | grep -qi "post-checkout: hiding repo plumbing" || { echo "::error::bootstrap hook did not fire on the second checkout"; exit 1; }
           for d in .cache/zsh .local/state/zsh/env .local/state/zsh/rc .local/state/git .local/share/repos .local/share/wallpapers .config/npm; do
             [ -d "$SCRATCH_HOME/$d" ] || { echo "::error::expected XDG dir missing after bootstrap: $d"; exit 1; }
           done
